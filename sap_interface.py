@@ -1,5 +1,6 @@
 import comtypes.client
 import math
+import sys
 
 
 def sap_open():
@@ -40,35 +41,6 @@ def sap_set_sections(
     lateral_sec,
 ):
 
-    sap_model.FrameObj.SetSection(
-        Name=bottom_chord_name, PropName=bottom_chord_sec, ItemType=1
-    )
-    sap_model.FrameObj.SetSection(
-        Name=top_chord_name, PropName=top_chord_sec, ItemType=1
-    )
-    sap_model.FrameObj.SetSection(Name=diag_web_name, PropName=diag_web_sec, ItemType=1)
-    sap_model.FrameObj.SetSection(Name=vert_web_name, PropName=vert_web_sec, ItemType=1)
-    sap_model.FrameObj.SetSection(Name=lateral_name, PropName=lateral_sec, ItemType=1)
-
-    sap_model.DesignSteel.SetDesignSection(
-        Name=bottom_chord_name,
-        PropName=bottom_chord_sec,
-        LastAnalysis=False,
-        ItemType=1,
-    )
-    sap_model.DesignSteel.SetDesignSection(
-        Name=top_chord_name, PropName=top_chord_sec, LastAnalysis=False, ItemType=1
-    )
-    sap_model.DesignSteel.SetDesignSection(
-        Name=diag_web_name, PropName=diag_web_sec, LastAnalysis=False, ItemType=1
-    )
-    sap_model.DesignSteel.SetDesignSection(
-        Name=vert_web_name, PropName=vert_web_sec, LastAnalysis=False, ItemType=1
-    )
-    sap_model.DesignSteel.SetDesignSection(
-        Name=lateral_name, PropName=lateral_sec, LastAnalysis=False, ItemType=1
-    )
-
     names = [
         bottom_chord_name,
         top_chord_name,
@@ -76,20 +48,25 @@ def sap_set_sections(
         vert_web_name,
         lateral_name,
     ]
-    frame_ids = []
+    sections = [
+        bottom_chord_sec,
+        top_chord_sec,
+        diag_web_sec,
+        vert_web_sec,
+        lateral_sec,
+    ]
 
-    for name in names:
-        _, types, ids, ret = sap_model.GroupDef.GetAssignments(name)
-        types = list(types)
-        ids = list(ids)
-        # only need to the ids corresponding with a type of 2 (2=frame)
-        ids = [id for t, id in zip(types, ids) if t == 2]
-        frame_ids.append(ids)
+    for i in range(len(names)):
+        sap_model.FrameObj.SetSection(Name=names[i], PropName=sections[i], ItemType=1)
+        sap_model.DesignSteel.SetDesignSection(
+            Name=names[i],
+            PropName=sections[i],
+            LastAnalysis=False,
+            ItemType=1,
+        )
 
-    return frame_ids
 
-
-def sap_central_node(sap_model, bottom_chord_frames):
+def sap_central_node():
     # just picked this manually from model
     return "9"
 
@@ -99,7 +76,7 @@ def sap_run_analysis(sap_model, file_path):
     ret = sap_model.Analyze.RunAnalysis()
 
 
-def sap_deflection(sap_model, bottom_chord_frames, span_length):
+def sap_deflection(sap_model, span_length):
 
     deflection_limit = span_length / 360.0
 
@@ -107,7 +84,7 @@ def sap_deflection(sap_model, bottom_chord_frames, span_length):
     ret = sap_model.Results.Setup.SetCaseSelectedForOutput("SLS 1")
 
     # get the central node vertical displacement
-    center_node = sap_central_node(sap_model, bottom_chord_frames)
+    center_node = sap_central_node()
     _, _, _, _, _, _, _, _, temp, _, _, _, ret = sap_model.Results.JointDispl(
         center_node, 0, 0, [], [], [], [], [], [], [], [], [], [], []
     )
@@ -128,7 +105,6 @@ def sap_module_mass(sap_model, num_modules):
     _, _, _, _, _, _, reaction, _, _, _, _, _, _, ret = sap_model.Results.BaseReact(
         0, [], [], [], [], [], [], [], [], [], 0, 0, 0
     )
-    print(reaction[0])
     # convert kip to kN then kN to kg
     total_mass = reaction[0] * 4.4482216
     total_mass = total_mass / 9.81 * 1000
@@ -157,11 +133,13 @@ def sap_member_design(sap_model):
         "ULS 6_s",
     ]
 
+    passed = True
+    failed_cases = []
+
     for case in cases:
 
         ret = sap_model.Results.Setup.DeselectAllCasesAndCombosForOutput()
         ret = sap_model.Results.Setup.SetCaseSelectedForOutput(case)
-
         num_failed = 0
         names = []
 
@@ -170,9 +148,55 @@ def sap_member_design(sap_model):
             0, num_failed, 0, names
         )
 
-        if num_failed != 0:
+        if num_failed > 0:
             passed = False
-        else:
-            passed = True
+            failed_cases.append(case)
 
-    return passed
+    return passed, failed_cases
+
+
+def sap_vibration_analysis(sap_model):
+    # get the vertical and lateral accelerations from model
+    # check if they are in comfort class 2 (below 1m/s2 for vertical, 0.3m/s2 for lateral)
+
+    v_cases = ["P_1V_t", "P_2V_t", "P_3V_t", "P_4V_t", "P_5V_t"]
+    l_cases = ["P_1L_t", "P_2L_t", "P_3L_t", "P_4L_t", "P_5L_t"]
+    modes = [1, 2, 3, 4, 5]
+    v_accel = []
+    l_accel = []
+
+    is_class2 = True
+
+    # check the vertical acceleration for modes 1-5
+    for case in v_cases:
+        ret = sap_model.Results.Setup.DeselectAllCasesAndCombosForOutput()
+        ret = sap_model.Results.Setup.SetCaseSelectedForOutput(case)
+
+        _, _, _, _, _, _, _, _, U3, _, _, _, ret = sap_model.Results.JointAccAbs(
+            sap_central_node(), 0, 0, [], [], [], [], [], [], [], [], [], [], []
+        )
+        U3_max = U3[0]
+        # convert in/s2 to m/s2
+        U3_max = U3_max * 0.0254
+        v_accel.append(U3_max)
+
+        if U3_max > 1.0:
+            is_class2 = False
+
+    # now check the lateral acceleration for modes 1-5
+    for case in l_cases:
+        ret = sap_model.Results.Setup.DeselectAllCasesAndCombosForOutput()
+        ret = sap_model.Results.Setup.SetCaseSelectedForOutput(case)
+
+        _, _, _, _, _, _, _, U2, _, _, _, _, ret = sap_model.Results.JointAccAbs(
+            sap_central_node(), 0, 0, [], [], [], [], [], [], [], [], [], [], []
+        )
+        U2_max = U2[0]
+        # convert in/s2 to m/s2
+        U2_max = U2_max * 0.0254
+        l_accel.append(U2_max)
+
+        if U2_max > 0.3:
+            is_class2 = False
+
+    return is_class2, v_accel, l_accel
