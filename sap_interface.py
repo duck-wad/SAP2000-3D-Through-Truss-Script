@@ -135,24 +135,26 @@ def sap_member_design(sap_model):
 
     passed = True
     failed_cases = []
+    num_failed = []
 
     for case in cases:
 
         ret = sap_model.Results.Setup.DeselectAllCasesAndCombosForOutput()
         ret = sap_model.Results.Setup.SetCaseSelectedForOutput(case)
-        num_failed = 0
+        failed = 0
         names = []
 
         ret = sap_model.DesignSteel.StartDesign()
-        _, num_failed, _, names, ret = sap_model.DesignSteel.VerifyPassed(
-            0, num_failed, 0, names
+        _, failed, _, names, ret = sap_model.DesignSteel.VerifyPassed(
+            0, failed, 0, names
         )
 
-        if num_failed > 0:
+        if failed > 0:
             passed = False
             failed_cases.append(case)
+            num_failed.append(failed)
 
-    return passed, failed_cases
+    return passed, failed_cases, num_failed
 
 
 def sap_vibration_analysis(sap_model):

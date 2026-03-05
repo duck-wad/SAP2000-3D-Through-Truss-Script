@@ -80,7 +80,7 @@ if __name__ == "__main__":
             module_mass = sap_module_mass(sap_model, num_modules)
 
             # verify frames pass steel design check, and get list of sections that fail if ULS does not pass
-            passed, failed_cases = sap_member_design(sap_model)
+            passed, failed_cases, num_failed = sap_member_design(sap_model)
 
             is_class2, v_accel, l_accel = sap_vibration_analysis(sap_model)
 
@@ -89,11 +89,13 @@ if __name__ == "__main__":
                     "Top chord": top_chord_section,
                     "Bottom chord": bottom_chord_section,
                     "Web members": web_section,
+                    "Laterals": lateral_section,
                     "Max vertical deflection for SLS (m)": deflection,
                     "Percentage of deflection limit for SLS (%)": deflection_percentage,
                     "Module mass (kg)": module_mass,
                     "Passed member design check for ULS": passed,
                     "Failed ULS cases": failed_cases,
+                    "Number of failed members": num_failed,
                     "Class 2": is_class2,
                     "Vertical acceleration 1 (m/s2)": v_accel[0],
                     "Vertical acceleration 2 (m/s2)": v_accel[1],
@@ -121,6 +123,7 @@ if __name__ == "__main__":
             tqdm.write(f"Mass of single module (kg): {round(module_mass, 3)}")
             tqdm.write(f"Passed member design check for ULS: {passed}")
             tqdm.write(f"Failed ULS cases: {failed_cases}")
+            tqdm.write(f"Number of failed members: {num_failed}")
             tqdm.write(f"Is comfort class 2?: {is_class2}")
             tqdm.write(
                 f"Acceleration in mode 1 (m/s2): vertical {v_accel[0]}, lateral {l_accel[0]}"

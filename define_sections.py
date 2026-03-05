@@ -1,6 +1,7 @@
 import xml.etree.ElementTree as ET
 import pandas as pd
 from fractions import Fraction
+import sys
 
 
 def load_xml_steel():
@@ -98,6 +99,7 @@ def valid_combinations_steel(top_sections, bottom_sections, web_sections):
                     if (bottom_d - web_d) >= min_d_diff:
                         # just make the laterals the same as the web
                         combinations.append([top, bottom, web, web])
+
     return combinations
 
 
@@ -111,7 +113,7 @@ def create_section_combinations_steel():
     """ ------------------------ FILTER ROUND SECTIONS ------------------------ """
     # web is smaller than bottom chord. don't specify a min or max diameter, that will be taken care of in
     # the valid_combinations_steel function. limit thickness 7.9-9.5
-    web_round = filter_HSS_sections_steel(round, 0, 7.9, 500, 9.5)
+    web_round = filter_HSS_sections_steel(round, 152, 7.9, 500, 9.5)
 
     """ ------------------------ FILTER BOX SECTIONS ------------------------ """
 
@@ -130,17 +132,18 @@ def create_section_combinations_steel():
 
     # limit top chord to be depth 200+ and thickness 7.9-9.5
     top_chord_box = filter_HSS_sections_steel(box, 200, 7.9, 356, 9.5)
-    # limit bottom chord depth no bottom limit, 305 top, 7.9-9.5
-    bottom_chord_box = filter_HSS_sections_steel(box, 0, 7.9, 305, 9.5)
-    # limit web depth no bottom limit, top limit 203
+    # limit bottom chord depth bottom limit 152, 305 top, 7.9-9.5
+    bottom_chord_box = filter_HSS_sections_steel(box, 152, 7.9, 305, 9.5)
+    # limit web depth bottom limit 152, top limit 254
     # limit the web to be only square sections
-    web_box = filter_HSS_sections_steel(box, 0, 7.9, 203, 9.5, asym=True)
+    web_box = filter_HSS_sections_steel(box, 152, 7.9, 254, 9.5, asym=True)
 
     """ ------------------------ CREATE COMBINATIONS ------------------------ """
 
     # [top, bottom, web, lateral]
     box_box_box = valid_combinations_steel(top_chord_box, bottom_chord_box, web_box)
     box_box_round = valid_combinations_steel(top_chord_box, bottom_chord_box, web_round)
+
     return [box_box_box, box_box_round]
 
 

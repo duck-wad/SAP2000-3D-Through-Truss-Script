@@ -2,6 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import os
 import numpy as np
+import sys
 
 
 def plot_save(plt, out_path, section, name):
@@ -21,43 +22,12 @@ def get_uls_indices(df):
     return index_true, index_false
 
 
-def determine_optimal_section(mass, harmonic, deflection):
+def determine_optimal_section(mass, comfort):
 
-    # normalize the harmonics, masses and deflections so they range from 0 to 1, where 1 is good and 0 is bad
-    # for instance, a high harmonic is good so normalize up, whereas low mass is good so normalize down
-    max_mass = np.max(mass)
-    min_mass = np.min(mass)
-    max_harmonic = np.max(harmonic)
-    min_harmonic = np.min(harmonic)
-    max_deflection = np.max(deflection)
-    min_deflection = np.min(deflection)
+    valid_indices = np.where(comfort)[0]  # indices where comfort == True
+    min_index = valid_indices[np.argmin(mass[valid_indices])]
 
-    normalized_mass = 1.0 - (mass - min_mass) / (max_mass - min_mass)
-    normalized_harmonic = (harmonic - min_harmonic) / (max_harmonic - min_harmonic)
-    normalized_deflection = 1.0 - (deflection - min_deflection) / (
-        max_deflection - min_deflection
-    )
-
-    # assign equal weighting to mass and harmonic
-    cost_matrix_weighting = 0.35
-    serviceability_matrix_weighting = 0.1
-    mass_weighting = cost_matrix_weighting / (
-        cost_matrix_weighting + serviceability_matrix_weighting
-    )
-    harmonic_weighting = (serviceability_matrix_weighting / 2.0) / (
-        cost_matrix_weighting + serviceability_matrix_weighting
-    )
-    deflection_weighting = (serviceability_matrix_weighting / 2.0) / (
-        cost_matrix_weighting + serviceability_matrix_weighting
-    )
-    score = (
-        mass_weighting * normalized_mass
-        + harmonic_weighting * normalized_harmonic
-        + deflection_weighting * normalized_deflection
-    )
-
-    high_score_index = np.argmax(score)
-    return high_score_index
+    return min_index
 
 
 def plot_mass_vs_deflection(
@@ -113,49 +83,49 @@ def plot_mass_vs_deflection(
     plot_save(plt, out_path, sheet_name, "mass vs deflection")
 
 
-def plot_mass_vs_harmonic(
-    mass_uls_passed,
-    mass_uls_failed,
-    harmonic_uls_passed,
-    harmonic_uls_failed,
-    optimal_mass,
-    optimal_harmonic,
-    optimal_sections,
+def plot_mass_vs_acceleration(
+    mass,
+    acceleration_v,
+    acceleration_l,
     sheet_name,
     out_path,
 ):
 
+    mode_colors = ["blue", "orange", "green", "red", "purple"]
+
+    # -------- Vertical acceleration plot --------
     plt.figure(figsize=(8, 6))
-    plt.scatter(
-        mass_uls_failed, harmonic_uls_failed, label="ULS Failed", color="red", s=10
-    )
-    plt.scatter(
-        mass_uls_passed, harmonic_uls_passed, label="ULS Passed", color="green", s=10
-    )
-    plt.scatter(
-        optimal_mass,
-        optimal_harmonic,
-        label="Optimal Section Combination",
-        color="cyan",
-        s=20,
-    )
-    plt.ylabel("Resonating harmonic")
+
+    for i in range(acceleration_v.shape[1]):  # 5 modes
+        plt.scatter(
+            mass, acceleration_v[:, i], label=f"Mode {i+1}", color=mode_colors[i], s=10
+        )
+
+    plt.ylabel("Vertical acceleration [m/s²]")
     plt.xlabel("Mass of module [kg]")
+    plt.title("Mass vs Vertical Acceleration")
     plt.grid(True)
     plt.minorticks_on()
     plt.legend()
-    plt.annotate(
-        optimal_sections,
-        xy=(optimal_mass, optimal_harmonic),
-        xytext=(optimal_mass + 400, optimal_harmonic - 0.2),
-        arrowprops=dict(facecolor="cyan", arrowstyle="->"),
-        fontsize=9,
-        bbox=dict(
-            boxstyle="round,pad=0.3", edgecolor="cyan", facecolor="white", alpha=0.8
-        ),
-    )
 
-    plot_save(plt, out_path, sheet_name, "mass vs resonating harmonic")
+    plot_save(plt, out_path, sheet_name, "mass vs vertical acceleration")
+
+    # -------- Lateral acceleration plot --------
+    plt.figure(figsize=(8, 6))
+
+    for i in range(acceleration_l.shape[1]):  # 5 modes
+        plt.scatter(
+            mass, acceleration_l[:, i], label=f"Mode {i+1}", color=mode_colors[i], s=10
+        )
+
+    plt.ylabel("Lateral acceleration [m/s²]")
+    plt.xlabel("Mass of module [kg]")
+    plt.title("Mass vs Lateral Acceleration")
+    plt.grid(True)
+    plt.minorticks_on()
+    plt.legend()
+
+    plot_save(plt, out_path, sheet_name, "mass vs lateral acceleration")
 
 
 # interpret_results can be run from main.py, or just from the run() function in this file
@@ -175,33 +145,55 @@ def interpret_results(file_path, sheets, folderpath):
         top_chord = df["Top chord"].to_numpy()
         bottom_chord = df["Bottom chord"].to_numpy()
         web = df["Web members"].to_numpy()
+        lateral = df["Laterals"].to_numpy()
         mass = df["Module mass (kg)"].to_numpy()
-        # get the occupied case since it is critical
-        harmonic = df["Resonating harmonic occupied"].to_numpy()
+        comfort_class = df["Class 2"].to_numpy()
         deflection = df["Max vertical deflection for SLS (m)"].to_numpy()
+        acceleration_v = np.column_stack(
+            [
+                df["Vertical acceleration 1 (m/s2)"],
+                df["Vertical acceleration 2 (m/s2)"],
+                df["Vertical acceleration 3 (m/s2)"],
+                df["Vertical acceleration 4 (m/s2)"],
+                df["Vertical acceleration 5 (m/s2)"],
+            ]
+        )
+
+        acceleration_l = np.column_stack(
+            [
+                df["Lateral acceleration 1 (m/s2)"],
+                df["Lateral acceleration 2 (m/s2)"],
+                df["Lateral acceleration 3 (m/s2)"],
+                df["Lateral acceleration 4 (m/s2)"],
+                df["Lateral acceleration 5 (m/s2)"],
+            ]
+        )
 
         # get the indices of section combos that pass ULS and split into separate lists
         index_true, index_false = get_uls_indices(df)
+
         mass_uls_passed = mass[index_true]
         mass_uls_failed = mass[index_false]
-        harmonic_uls_passed = harmonic[index_true]
-        harmonic_uls_failed = harmonic[index_false]
+        comfort_uls_passed = comfort_class[index_true]
+        comfort_uls_failed = comfort_class[index_false]
         deflection_uls_passed = deflection[index_true]
         deflection_uls_failed = deflection[index_false]
-
         top_chord_uls_passed = top_chord[index_true]
         bottom_chord_uls_passed = bottom_chord[index_true]
         web_uls_passed = web[index_true]
+        lateral_uls_passed = lateral[index_true]
 
         high_score_index = determine_optimal_section(
-            mass_uls_passed, harmonic_uls_passed, deflection_uls_passed
+            mass_uls_passed, comfort_uls_passed
         )
+
         optimal_mass = mass_uls_passed[high_score_index]
-        optimal_harmonic = harmonic_uls_passed[high_score_index]
         optimal_deflection = deflection_uls_passed[high_score_index]
         optimal_top_chord = top_chord_uls_passed[high_score_index]
         optimal_bottom_chord = bottom_chord_uls_passed[high_score_index]
         optimal_web = web_uls_passed[high_score_index]
+        optimal_lateral = lateral_uls_passed[high_score_index]
+
         # with line breaks for plotting
         optimal_sections_spaced = (
             "Top: "
@@ -210,6 +202,8 @@ def interpret_results(file_path, sheets, folderpath):
             + optimal_bottom_chord
             + "\nWeb: "
             + optimal_web
+            + "\nLateral: "
+            + optimal_lateral
         )
 
         plot_mass_vs_deflection(
@@ -223,14 +217,11 @@ def interpret_results(file_path, sheets, folderpath):
             sheets[index],
             out_path,
         )
-        plot_mass_vs_harmonic(
-            mass_uls_passed,
-            mass_uls_failed,
-            harmonic_uls_passed,
-            harmonic_uls_failed,
-            optimal_mass,
-            optimal_harmonic,
-            optimal_sections_spaced,
+
+        plot_mass_vs_acceleration(
+            mass,
+            acceleration_v,
+            acceleration_l,
             sheets[index],
             out_path,
         )
@@ -240,7 +231,7 @@ def run():
     root_path = os.getcwd()
     file_path = root_path + "/output.xlsx"
     # sheet_names = ["Aluminum"]
-    sheet_names = ["Steel"]
+    sheet_names = ["Box Box Box"]
     interpret_results(file_path, sheet_names, root_path)
 
 
