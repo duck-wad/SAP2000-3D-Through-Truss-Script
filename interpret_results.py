@@ -72,11 +72,12 @@ def plot_mass_vs_deflection(
     plt.annotate(
         optimal_sections,
         xy=(optimal_mass, optimal_deflection * 1000),
-        xytext=(optimal_mass + 400, optimal_deflection * 1000 + 2),
-        arrowprops=dict(facecolor="cyan", arrowstyle="->"),
+        xytext=(80, 80),  # offset in pixels
+        textcoords="offset points",
+        arrowprops=dict(arrowstyle="->", color="cyan", lw=1.5),
         fontsize=9,
         bbox=dict(
-            boxstyle="round,pad=0.3", edgecolor="cyan", facecolor="white", alpha=0.8
+            boxstyle="round,pad=0.3", edgecolor="cyan", facecolor="white", alpha=0.9
         ),
     )
 
@@ -231,7 +232,7 @@ def run():
     root_path = os.getcwd()
     file_path = root_path + "/output.xlsx"
     # sheet_names = ["Aluminum"]
-    sheet_names = ["Box Box Box"]
+    sheet_names = ["Steel"]
     interpret_results(file_path, sheet_names, root_path)
 
 
