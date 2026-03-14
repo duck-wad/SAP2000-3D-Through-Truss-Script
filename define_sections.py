@@ -114,54 +114,51 @@ def valid_combinations_steel(
             bottom_d = get_depth(bottom)
             bottom_w = get_width(bottom)
 
-            # depth constraint
-            if (top_d - bottom_d) >= min_d_diff:
+            # width top chord = width bottom chord
+            if top_w == bottom_w and top_d == bottom_d:
 
-                # width top chord = width bottom chord
-                if top_w == bottom_w:
+                for diag_web in web_sections:
 
-                    for diag_web in web_sections:
+                    diag_d = get_depth(diag_web)
+                    diag_w = get_width(diag_web)
 
-                        diag_d = get_depth(diag_web)
-                        diag_w = get_width(diag_web)
+                    # width diag_web <= width bottom chord
+                    if diag_w <= bottom_w:
 
-                        # width diag_web <= width bottom chord
-                        if diag_w <= bottom_w:
+                        # depth hierarchy
+                        if (bottom_d - diag_d) >= min_d_diff:
 
-                            # depth hierarchy
-                            if (bottom_d - diag_d) >= min_d_diff:
+                            for vert_web in web_sections:
 
-                                for vert_web in web_sections:
+                                vert_d = get_depth(vert_web)
+                                vert_w = get_width(vert_web)
 
-                                    vert_d = get_depth(vert_web)
-                                    vert_w = get_width(vert_web)
+                                # width vert_web = depth vert_web (square only)
+                                if vert_w == vert_d:
 
-                                    # width vert_web = depth vert_web (square only)
-                                    if vert_w == vert_d:
+                                    # width vert_web <= width bottom chord
+                                    if vert_w <= bottom_w:
 
-                                        # width vert_web <= width bottom chord
-                                        if vert_w <= bottom_w:
+                                        for lateral in lateral_sections:
 
-                                            for lateral in lateral_sections:
+                                            lat_d = get_depth(lateral)
+                                            lat_w = get_width(lateral)
 
-                                                lat_d = get_depth(lateral)
-                                                lat_w = get_width(lateral)
+                                            # depth lateral <= depth top chord
+                                            if lat_d <= top_d:
 
-                                                # depth lateral <= depth top chord
-                                                if lat_d <= top_d:
+                                                # width lateral = depth lateral (square only)
+                                                if lat_w == lat_d:
 
-                                                    # width lateral = depth lateral (square only)
-                                                    if lat_w == lat_d:
-
-                                                        combinations.append(
-                                                            [
-                                                                top,
-                                                                bottom,
-                                                                diag_web,
-                                                                vert_web,
-                                                                lateral,
-                                                            ]
-                                                        )
+                                                    combinations.append(
+                                                        [
+                                                            top,
+                                                            bottom,
+                                                            diag_web,
+                                                            vert_web,
+                                                            lateral,
+                                                        ]
+                                                    )
 
     return combinations
 
