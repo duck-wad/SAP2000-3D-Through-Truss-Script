@@ -37,7 +37,8 @@ if __name__ == "__main__":
     results_path = root_path + os.sep + results_file
     if os.path.exists(results_path):
         os.remove(results_path)
-    sheet_names = ["Box Box Box", "Box Box Round"]
+    # sheet_names = ["Box Box Box", "Box Box Round"]
+    sheet_names = ["Box Box Box"]
 
     first_write = True
 

@@ -81,29 +81,6 @@ def filter_HSS_sections_steel(
     return filtered_sections
 
 
-""" def valid_combinations_steel(top_sections, bottom_sections, web_sections):
-    combinations = []
-    # to limit number of combinations, specify a minimum difference between the top and bottom chord
-    # as well as web and bottom chord of 50mm
-    min_d_diff = 50
-    for top in top_sections:
-        temp = top.split("X")
-        top_d = int(temp[0][2:])
-        for bottom in bottom_sections:
-            temp = bottom.split("X")
-            bottom_d = int(temp[0][2:])
-            if (top_d - bottom_d) >= min_d_diff:
-                for web in web_sections:
-                    temp = web.split("X")
-                    web_d = int(temp[0][2:])
-                    if (bottom_d - web_d) >= min_d_diff:
-                        # just make the laterals the same as the web
-                        combinations.append([top, bottom, web, web])
-
-    print(len(combinations))
-    return combinations """
-
-
 def get_depth(section):
     parts = section.replace("HS", "").split("X")
     return int(float(parts[0]))
