@@ -53,8 +53,11 @@ if __name__ == "__main__":
 
             top_chord_section = combination[0]
             bottom_chord_section = combination[1]
-            web_section = combination[2]
-            lateral_section = combination[3]
+            diag_web_section = combination[2]
+            vert_web_section = combination[3]
+            lateral_section = combination[4]
+
+            print(combination)
 
             # change the section of the member groups
             sap_set_sections(
@@ -66,15 +69,19 @@ if __name__ == "__main__":
                 "LATERAL",
                 bottom_chord_section,
                 top_chord_section,
-                web_section,
-                web_section,
+                diag_web_section,
+                vert_web_section,
                 lateral_section,
             )
 
             """ ------------------------ RUN MODEL AND COLLECT RESULTS ------------------------ """
             sap_run_analysis(sap_model, model_path)
 
-            deflection, deflection_percentage = sap_deflection(sap_model, span_length)
+            deflection, deflection_percentage = sap_vert_deflection(
+                sap_model, span_length
+            )
+
+            lat_deflection, lat_deflection_percentage = sap_lat_deflection(sap_model)
 
             # get the reaction output from dead case and divide by num_modules
             module_mass = sap_module_mass(sap_model, num_modules)
@@ -88,10 +95,13 @@ if __name__ == "__main__":
                 {
                     "Top chord": top_chord_section,
                     "Bottom chord": bottom_chord_section,
-                    "Web members": web_section,
+                    "Diagonal Web members": diag_web_section,
+                    "Vertical Web members": vert_web_section,
                     "Laterals": lateral_section,
                     "Max vertical deflection for SLS (m)": deflection,
-                    "Percentage of deflection limit for SLS (%)": deflection_percentage,
+                    "Percentage of deflection limit (L/360) for SLS (%)": deflection_percentage,
+                    "Max lateral deflection for SLS (m)": lat_deflection,
+                    "Percentage of deflection limit (100mm) for SLS (%)": lat_deflection_percentage,
                     "Module mass (kg)": module_mass,
                     "Passed member design check for ULS": passed,
                     "Failed ULS cases": failed_cases,
@@ -112,13 +122,19 @@ if __name__ == "__main__":
 
             # log results to console
             tqdm.write(
-                f"Top chord section: {top_chord_section}, Bottom chord section: {bottom_chord_section}, Web member section: {web_section}, Lateral member section: {lateral_section}"
+                f"Top chord section: {top_chord_section}, Bottom chord section: {bottom_chord_section}, Diagonal web member section: {diag_web_section}, Vertical web member section: {vert_web_section} Lateral member section: {lateral_section}"
             )
             tqdm.write(
-                f"Deflection of central node for SLS (mm): {round(deflection * 1000, 3)}"
+                f"Vertical deflection of central node for SLS (mm): {round(deflection * 1000, 3)}"
             )
             tqdm.write(
-                f"Percentage of deflection limit for SLS (%): {round(deflection_percentage)}"
+                f"Percentage of vertical deflection limit for SLS (%): {round(deflection_percentage)}"
+            )
+            tqdm.write(
+                f"Lateral deflection of central node for SLS (mm): {round(lat_deflection * 1000, 3)}"
+            )
+            tqdm.write(
+                f"Percentage of lateral deflection limit for SLS (%): {round(lat_deflection_percentage)}"
             )
             tqdm.write(f"Mass of single module (kg): {round(module_mass, 3)}")
             tqdm.write(f"Passed member design check for ULS: {passed}")

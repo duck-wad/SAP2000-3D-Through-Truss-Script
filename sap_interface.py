@@ -76,7 +76,7 @@ def sap_run_analysis(sap_model, file_path):
     ret = sap_model.Analyze.RunAnalysis()
 
 
-def sap_deflection(sap_model, span_length):
+def sap_vert_deflection(sap_model, span_length):
 
     deflection_limit = span_length / 360.0
 
@@ -86,6 +86,26 @@ def sap_deflection(sap_model, span_length):
     # get the central node vertical displacement
     center_node = sap_central_node()
     _, _, _, _, _, _, _, _, temp, _, _, _, ret = sap_model.Results.JointDispl(
+        center_node, 0, 0, [], [], [], [], [], [], [], [], [], [], []
+    )
+    # return absolute value
+    deflection = (
+        abs(temp[0]) * 0.0254
+    )  # convert from inches to m idk why sap model is in inches and dont know how to change it
+    percentage = deflection / deflection_limit * 100
+    return deflection, percentage
+
+
+def sap_lat_deflection(sap_model):
+
+    deflection_limit = 0.1  # lateral deflection limit 100mm
+
+    ret = sap_model.Results.Setup.DeselectAllCasesAndCombosForOutput()
+    ret = sap_model.Results.Setup.SetCaseSelectedForOutput("SLS 2")
+
+    # get the central node vertical displacement
+    center_node = "104"
+    _, _, _, _, _, _, _, temp, _, _, _, _, ret = sap_model.Results.JointDispl(
         center_node, 0, 0, [], [], [], [], [], [], [], [], [], [], []
     )
     # return absolute value

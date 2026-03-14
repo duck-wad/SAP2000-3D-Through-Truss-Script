@@ -81,7 +81,7 @@ def filter_HSS_sections_steel(
     return filtered_sections
 
 
-def valid_combinations_steel(top_sections, bottom_sections, web_sections):
+""" def valid_combinations_steel(top_sections, bottom_sections, web_sections):
     combinations = []
     # to limit number of combinations, specify a minimum difference between the top and bottom chord
     # as well as web and bottom chord of 50mm
@@ -99,6 +99,92 @@ def valid_combinations_steel(top_sections, bottom_sections, web_sections):
                     if (bottom_d - web_d) >= min_d_diff:
                         # just make the laterals the same as the web
                         combinations.append([top, bottom, web, web])
+
+    print(len(combinations))
+    return combinations """
+
+
+def get_depth(section):
+    parts = section.replace("HS", "").split("X")
+    return int(float(parts[0]))
+
+
+def get_width(section):
+    parts = section.replace("HS", "").split("X")
+
+    # for round hss
+    if len(parts) == 2:
+        return int(float(parts[0]))
+
+    # rectangular/square HSS
+    return int(float(parts[1]))
+
+
+def valid_combinations_steel(
+    top_sections, bottom_sections, web_sections, lateral_sections
+):
+
+    combinations = []
+    min_d_diff = 50
+
+    for top in top_sections:
+
+        top_d = get_depth(top)
+        top_w = get_width(top)
+
+        for bottom in bottom_sections:
+
+            bottom_d = get_depth(bottom)
+            bottom_w = get_width(bottom)
+
+            # depth constraint
+            if (top_d - bottom_d) >= min_d_diff:
+
+                # width top chord = width bottom chord
+                if top_w == bottom_w:
+
+                    for diag_web in web_sections:
+
+                        diag_d = get_depth(diag_web)
+                        diag_w = get_width(diag_web)
+
+                        # width diag_web <= width bottom chord
+                        if diag_w <= bottom_w:
+
+                            # depth hierarchy
+                            if (bottom_d - diag_d) >= min_d_diff:
+
+                                for vert_web in web_sections:
+
+                                    vert_d = get_depth(vert_web)
+                                    vert_w = get_width(vert_web)
+
+                                    # width vert_web = depth vert_web (square only)
+                                    if vert_w == vert_d:
+
+                                        # width vert_web <= width bottom chord
+                                        if vert_w <= bottom_w:
+
+                                            for lateral in lateral_sections:
+
+                                                lat_d = get_depth(lateral)
+                                                lat_w = get_width(lateral)
+
+                                                # depth lateral <= depth top chord
+                                                if lat_d <= top_d:
+
+                                                    # width lateral = depth lateral (square only)
+                                                    if lat_w == lat_d:
+
+                                                        combinations.append(
+                                                            [
+                                                                top,
+                                                                bottom,
+                                                                diag_web,
+                                                                vert_web,
+                                                                lateral,
+                                                            ]
+                                                        )
 
     return combinations
 
@@ -141,10 +227,15 @@ def create_section_combinations_steel():
     """ ------------------------ CREATE COMBINATIONS ------------------------ """
 
     # [top, bottom, web, lateral]
-    box_box_box = valid_combinations_steel(top_chord_box, bottom_chord_box, web_box)
-    box_box_round = valid_combinations_steel(top_chord_box, bottom_chord_box, web_round)
+    box_box_box = valid_combinations_steel(
+        top_chord_box, bottom_chord_box, web_box, web_box
+    )
+    box_box_round = valid_combinations_steel(
+        top_chord_box, bottom_chord_box, web_round, web_round
+    )
 
-    return [box_box_box, box_box_round]
+    # only do box_box_box for now
+    return [box_box_box]
 
 
 def parse_fraction(s: str) -> float:
