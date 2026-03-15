@@ -22,6 +22,8 @@ if __name__ == "__main__":
     # each combination has 4 sections: top chord, bottom chord, web, lateral
     # but lateral is matched with web for simplicity
     section_combinations = create_section_combinations_steel()
+    print(section_combinations[0][0])
+    sys.exit()
 
     # set file paths. put run model in models folder to
     root_path = os.getcwd()

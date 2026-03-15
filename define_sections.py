@@ -125,40 +125,37 @@ def valid_combinations_steel(
                     # width diag_web <= width bottom chord
                     if diag_w <= bottom_w:
 
-                        # depth hierarchy
-                        if (bottom_d - diag_d) >= min_d_diff:
+                        for vert_web in web_sections:
 
-                            for vert_web in web_sections:
+                            vert_d = get_depth(vert_web)
+                            vert_w = get_width(vert_web)
 
-                                vert_d = get_depth(vert_web)
-                                vert_w = get_width(vert_web)
+                            # width vert_web = depth vert_web (square only)
+                            if vert_w == vert_d:
 
-                                # width vert_web = depth vert_web (square only)
-                                if vert_w == vert_d:
+                                # width vert_web <= width bottom chord
+                                if vert_w <= bottom_w:
 
-                                    # width vert_web <= width bottom chord
-                                    if vert_w <= bottom_w:
+                                    for lateral in lateral_sections:
 
-                                        for lateral in lateral_sections:
+                                        lat_d = get_depth(lateral)
+                                        lat_w = get_width(lateral)
 
-                                            lat_d = get_depth(lateral)
-                                            lat_w = get_width(lateral)
+                                        # depth lateral <= depth top chord
+                                        if lat_d <= top_d:
 
-                                            # depth lateral <= depth top chord
-                                            if lat_d <= top_d:
+                                            # width lateral = depth lateral (square only)
+                                            if lat_w == lat_d:
 
-                                                # width lateral = depth lateral (square only)
-                                                if lat_w == lat_d:
-
-                                                    combinations.append(
-                                                        [
-                                                            top,
-                                                            bottom,
-                                                            diag_web,
-                                                            vert_web,
-                                                            lateral,
-                                                        ]
-                                                    )
+                                                combinations.append(
+                                                    [
+                                                        top,
+                                                        bottom,
+                                                        diag_web,
+                                                        vert_web,
+                                                        lateral,
+                                                    ]
+                                                )
 
     return combinations
 
@@ -191,18 +188,19 @@ def create_section_combinations_steel():
     box.reverse()
 
     # limit top chord to be depth 200+ and thickness 7.9-9.5
-    top_chord_box = filter_HSS_sections_steel(box, 200, 7.9, 356, 9.5)
+    top_chord_box = filter_HSS_sections_steel(box, 152, 6.4, 203, 8)
     # limit bottom chord depth bottom limit 152, 305 top, 7.9-9.5
-    bottom_chord_box = filter_HSS_sections_steel(box, 152, 7.9, 305, 9.5)
+    bottom_chord_box = filter_HSS_sections_steel(box, 152, 6.4, 203, 8)
     # limit web depth bottom limit 152, top limit 254
     # limit the web to be only square sections
-    web_box = filter_HSS_sections_steel(box, 152, 7.9, 203, 8, asym=True)
+    web_box = filter_HSS_sections_steel(box, 152, 6.4, 203, 8, asym=True)
+    lateral_box = filter_HSS_sections_steel(box, 127, 6.4, 178, 8, asym=True)
 
     """ ------------------------ CREATE COMBINATIONS ------------------------ """
 
     # [top, bottom, web, lateral]
     box_box_box = valid_combinations_steel(
-        top_chord_box, bottom_chord_box, web_box, web_box
+        top_chord_box, bottom_chord_box, web_box, lateral_box
     )
     """ box_box_round = valid_combinations_steel(
         top_chord_box, bottom_chord_box, web_round, web_round
