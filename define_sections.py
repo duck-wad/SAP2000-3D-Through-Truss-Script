@@ -6,7 +6,7 @@ import sys
 
 def load_xml_steel():
     # load xml file from SAP2000 installation folder
-    tree = ET.parse(
+    """ tree = ET.parse(
         r"C:\Program Files\Computers and Structures\SAP2000 26\Property Libraries\Sections\CISC10.xml"
     )
     root = tree.getroot()
@@ -38,12 +38,12 @@ def load_xml_steel():
     hss_box_excel = hss_box.copy()
     hss_round_excel += [None] * (max_len - len(hss_round))
     hss_box_excel += [None] * (max_len - len(hss_box))
-
-    # Create DataFrame
-    df = pd.DataFrame({"HSS Round": hss_round_excel, "HSS Box": hss_box_excel})
-
+    """
     output_path = "./steel_sections.xlsx"
-    df.to_excel(output_path, index=False)
+    df = pd.read_excel(output_path)
+    # Create DataFrame
+    hss_round = (df['HSS Round']).dropna().tolist()
+    hss_box = df['HSS Box'].dropna().tolist()
 
     return hss_round, hss_box
 
@@ -196,7 +196,7 @@ def create_section_combinations_steel():
     bottom_chord_box = filter_HSS_sections_steel(box, 152, 7.9, 305, 9.5)
     # limit web depth bottom limit 152, top limit 254
     # limit the web to be only square sections
-    web_box = filter_HSS_sections_steel(box, 152, 7.9, 254, 9.5, asym=True)
+    web_box = filter_HSS_sections_steel(box, 152, 7.9, 203, 8, asym=True)
 
     """ ------------------------ CREATE COMBINATIONS ------------------------ """
 
@@ -204,9 +204,9 @@ def create_section_combinations_steel():
     box_box_box = valid_combinations_steel(
         top_chord_box, bottom_chord_box, web_box, web_box
     )
-    box_box_round = valid_combinations_steel(
+    """ box_box_round = valid_combinations_steel(
         top_chord_box, bottom_chord_box, web_round, web_round
-    )
+    ) """
 
     # only do box_box_box for now
     return [box_box_box]

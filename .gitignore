@@ -3,7 +3,6 @@
 /BASE.sbk
 /models
 /__pycache__
-*.xlsx
 /temp
 /plots
 
