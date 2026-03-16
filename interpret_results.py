@@ -145,7 +145,8 @@ def interpret_results(file_path, sheets, folderpath):
 
         top_chord = df["Top chord"].to_numpy()
         bottom_chord = df["Bottom chord"].to_numpy()
-        web = df["Web members"].to_numpy()
+        diag_web = df["Diagonal Web members"].to_numpy()
+        vert_web = df["Vertical Web members"].to_numpy()
         lateral = df["Laterals"].to_numpy()
         mass = df["Module mass (kg)"].to_numpy()
         comfort_class = df["Class 2"].to_numpy()
@@ -181,7 +182,8 @@ def interpret_results(file_path, sheets, folderpath):
         deflection_uls_failed = deflection[index_false]
         top_chord_uls_passed = top_chord[index_true]
         bottom_chord_uls_passed = bottom_chord[index_true]
-        web_uls_passed = web[index_true]
+        diag_web_uls_passed = diag_web[index_true]
+        vert_web_uls_passed = vert_web[index_true]
         lateral_uls_passed = lateral[index_true]
 
         high_score_index = determine_optimal_section(
@@ -192,7 +194,8 @@ def interpret_results(file_path, sheets, folderpath):
         optimal_deflection = deflection_uls_passed[high_score_index]
         optimal_top_chord = top_chord_uls_passed[high_score_index]
         optimal_bottom_chord = bottom_chord_uls_passed[high_score_index]
-        optimal_web = web_uls_passed[high_score_index]
+        optimal_diag_web = diag_web_uls_passed[high_score_index]
+        optimal_vert_web = vert_web_uls_passed[high_score_index]
         optimal_lateral = lateral_uls_passed[high_score_index]
 
         # with line breaks for plotting
@@ -201,8 +204,10 @@ def interpret_results(file_path, sheets, folderpath):
             + optimal_top_chord
             + "\nBottom: "
             + optimal_bottom_chord
-            + "\nWeb: "
-            + optimal_web
+            + "\nDiagonal Web: "
+            + optimal_diag_web
+            + "\nVertical Web: "
+            + optimal_vert_web
             + "\nLateral: "
             + optimal_lateral
         )
