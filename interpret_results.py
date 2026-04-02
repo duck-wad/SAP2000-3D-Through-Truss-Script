@@ -40,6 +40,8 @@ def plot_mass_vs_deflection(
     optimal_sections,
     sheet_name,
     out_path,
+    yaxis_name,
+    title,
 ):
 
     plt.figure(figsize=(8, 6))
@@ -47,29 +49,32 @@ def plot_mass_vs_deflection(
         mass_uls_failed,
         deflection_uls_failed * 1000,
         label="ULS Failed",
-        color="red",
-        s=10,
+        color=(0.55, 0.55, 0.55),
+        s=20,
+        marker="x",
     )
     plt.scatter(
         mass_uls_passed,
         deflection_uls_passed * 1000,
         label="ULS Passed",
-        color="green",
+        color=(0, 0.506, 0.686),
         s=10,
     )
     plt.scatter(
         optimal_mass,
         optimal_deflection * 1000,
-        label="Optimal Section Combination",
-        color="cyan",
-        s=20,
+        label="Optimal Combination",
+        color="goldenrod",
+        s=100,
+        marker="*",
     )
-    plt.ylabel("SLS Deflection [mm]")
-    plt.xlabel("Mass of module [kg]")
+    plt.rcParams.update({"font.size": 12})
+    plt.ylabel(yaxis_name, fontsize=12)
+    plt.xlabel("Mass of module [kg]", fontsize=12)
     plt.grid(True)
     plt.minorticks_on()
-    plt.legend()
-    plt.annotate(
+    plt.legend(loc="lower left")
+    """ plt.annotate(
         optimal_sections,
         xy=(optimal_mass, optimal_deflection * 1000),
         xytext=(80, 80),  # offset in pixels
@@ -79,9 +84,9 @@ def plot_mass_vs_deflection(
         bbox=dict(
             boxstyle="round,pad=0.3", edgecolor="cyan", facecolor="white", alpha=0.9
         ),
-    )
+    ) """
 
-    plot_save(plt, out_path, sheet_name, "mass vs deflection")
+    plot_save(plt, out_path, sheet_name, title)
 
 
 def plot_mass_vs_acceleration(
@@ -150,7 +155,8 @@ def interpret_results(file_path, sheets, folderpath):
         lateral = df["Laterals"].to_numpy()
         mass = df["Module mass (kg)"].to_numpy()
         comfort_class = df["Class 2"].to_numpy()
-        deflection = df["Max vertical deflection for SLS (m)"].to_numpy()
+        v_deflection = df["Max vertical deflection for SLS (m)"].to_numpy()
+        l_deflection = df["Max lateral deflection for SLS (m)"].to_numpy()
         acceleration_v = np.column_stack(
             [
                 df["Vertical acceleration 1 (m/s2)"],
@@ -178,8 +184,10 @@ def interpret_results(file_path, sheets, folderpath):
         mass_uls_failed = mass[index_false]
         comfort_uls_passed = comfort_class[index_true]
         comfort_uls_failed = comfort_class[index_false]
-        deflection_uls_passed = deflection[index_true]
-        deflection_uls_failed = deflection[index_false]
+        v_deflection_uls_passed = v_deflection[index_true]
+        v_deflection_uls_failed = v_deflection[index_false]
+        l_deflection_uls_passed = l_deflection[index_true]
+        l_deflection_uls_failed = l_deflection[index_false]
         top_chord_uls_passed = top_chord[index_true]
         bottom_chord_uls_passed = bottom_chord[index_true]
         diag_web_uls_passed = diag_web[index_true]
@@ -191,7 +199,8 @@ def interpret_results(file_path, sheets, folderpath):
         )
 
         optimal_mass = mass_uls_passed[high_score_index]
-        optimal_deflection = deflection_uls_passed[high_score_index]
+        optimal_v_deflection = v_deflection_uls_passed[high_score_index]
+        optimal_l_deflection = l_deflection_uls_passed[high_score_index]
         optimal_top_chord = top_chord_uls_passed[high_score_index]
         optimal_bottom_chord = bottom_chord_uls_passed[high_score_index]
         optimal_diag_web = diag_web_uls_passed[high_score_index]
@@ -212,16 +221,34 @@ def interpret_results(file_path, sheets, folderpath):
             + optimal_lateral
         )
 
+        # plot vertical deflection
         plot_mass_vs_deflection(
             mass_uls_passed,
             mass_uls_failed,
-            deflection_uls_passed,
-            deflection_uls_failed,
+            v_deflection_uls_passed,
+            v_deflection_uls_failed,
             optimal_mass,
-            optimal_deflection,
+            optimal_v_deflection,
             optimal_sections_spaced,
             sheets[index],
             out_path,
+            "SLS Vertical Deflection [mm]",
+            "mass vs vertical deflection",
+        )
+
+        # plot horizontal deflection
+        plot_mass_vs_deflection(
+            mass_uls_passed,
+            mass_uls_failed,
+            l_deflection_uls_passed,
+            l_deflection_uls_failed,
+            optimal_mass,
+            optimal_l_deflection,
+            optimal_sections_spaced,
+            sheets[index],
+            out_path,
+            "SLS Lateral Deflection [mm]",
+            "mass vs lateral deflection",
         )
 
         plot_mass_vs_acceleration(
@@ -237,7 +264,7 @@ def run():
     root_path = os.getcwd()
     file_path = root_path + "/output.xlsx"
     # sheet_names = ["Aluminum"]
-    sheet_names = ["Steel"]
+    sheet_names = ["Box Box Box"]
     interpret_results(file_path, sheet_names, root_path)
 
 

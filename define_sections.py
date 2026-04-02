@@ -5,45 +5,11 @@ import sys
 
 
 def load_xml_steel():
-    # load xml file from SAP2000 installation folder
-    """ tree = ET.parse(
-        r"C:\Program Files\Computers and Structures\SAP2000 26\Property Libraries\Sections\CISC10.xml"
-    )
-    root = tree.getroot()
-
-    ns = {"csi": "http://www.csiberkeley.com"}
-
-    # find all steel pipe (round)
-    round_pipe = root.findall(".//csi:STEEL_PIPE", ns)
-
-    # filter the labels
-    hss_round = []
-    for pipe in round_pipe:
-        label = pipe.find("csi:LABEL", ns)
-        if label is not None and label.text.startswith("HS"):
-            hss_round.append(label.text)
-
-    # find all HSS sections
-    hss = root.findall(".//csi:STEEL_BOX", ns)
-
-    hss_box = []
-    for pipe in hss:
-        label = pipe.find("csi:LABEL", ns)
-        if label is not None and label.text.startswith("HS"):
-            hss_box.append(label.text)
-
-    # write sections to excel file for easier reference
-    max_len = max(len(hss_round), len(hss_box))
-    hss_round_excel = hss_round.copy()
-    hss_box_excel = hss_box.copy()
-    hss_round_excel += [None] * (max_len - len(hss_round))
-    hss_box_excel += [None] * (max_len - len(hss_box))
-    """
     output_path = "./steel_sections.xlsx"
     df = pd.read_excel(output_path)
     # Create DataFrame
-    hss_round = (df['HSS Round']).dropna().tolist()
-    hss_box = df['HSS Box'].dropna().tolist()
+    hss_round = (df["HSS Round"]).dropna().tolist()
+    hss_box = df["HSS Box"].dropna().tolist()
 
     return hss_round, hss_box
 
@@ -188,13 +154,13 @@ def create_section_combinations_steel():
     box.reverse()
 
     # limit top chord to be depth 200+ and thickness 7.9-9.5
-    top_chord_box = filter_HSS_sections_steel(box, 152, 6.4, 203, 8)
+    top_chord_box = filter_HSS_sections_steel(box, 152, 7.9, 178, 13, asym=True)
     # limit bottom chord depth bottom limit 152, 305 top, 7.9-9.5
-    bottom_chord_box = filter_HSS_sections_steel(box, 152, 6.4, 203, 8)
+    bottom_chord_box = filter_HSS_sections_steel(box, 152, 7.9, 178, 13, asym=True)
     # limit web depth bottom limit 152, top limit 254
     # limit the web to be only square sections
-    web_box = filter_HSS_sections_steel(box, 152, 6.4, 203, 8, asym=True)
-    lateral_box = filter_HSS_sections_steel(box, 127, 6.4, 178, 8, asym=True)
+    web_box = filter_HSS_sections_steel(box, 152, 9.5, 178, 13, asym=True)
+    lateral_box = filter_HSS_sections_steel(box, 127, 7.9, 178, 8, asym=True)
 
     """ ------------------------ CREATE COMBINATIONS ------------------------ """
 
